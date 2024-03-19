@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:13.3
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: username1
+      POSTGRES_PASSWORD: password1
+      POSTGRES_DB: db
+    ports:
+      - "5433:5432"
+
+  app:
+    build: .
+    depends_on:
+      - db
+    restart: on-failure
+    ports:
+      - "8080:8080"
