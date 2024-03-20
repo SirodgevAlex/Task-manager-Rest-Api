@@ -64,5 +64,29 @@ Content-Type: text/plain; charset=utf-8
 {"Id":1,"Name":"quest1","Cost":20}
 ```
 
+6. Запрос для уведомления сервиса о выполенном задании
+
+   ```bash
+   curl -i -X POST \
+     http://localhost:8080/complete \
+     -H 'Content-Type: application/json' \
+     -d '{
+       "userId": 1,
+       "questId": 4
+   }'
+   ```
+
+   получим такой результат
+
+   ```bash
+   HTTP/1.1 200 OK
+   Date: Mon, 19 Mar 2024 09:59:26 GMT
+   Content-Length: 32
+   Content-Type: text/plain; charset=utf-8
+
+   {"Id":0,"UserId":1,"QuestId":4}
+   ```
+
+   предусмотрена обработка краевых случаев
 
 P.S. я долго пытался сделать через докер - не смог, ибо так и не понял, где прописывать запуск db.sql, чтоб, когда начнем совершать события, данные клались в соответсвующую бд, а бд не были созданы, потому что не не смог запустить db.sql.
