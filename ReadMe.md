@@ -22,7 +22,7 @@
 4) Запрос для создания пользователя
 
    ```bash
-   curl -X POST \
+   curl -i -X POST \
      http://localhost:8080/users \
      -H 'Content-Type: application/json' \
      -d '{
@@ -30,5 +30,39 @@
        "Balance": 100
    }
    ```
+
+   получим такой результат
+
+   ```json
+   HTTP/1.1 201 Created
+   Date: Mon, 19 Mar 2024 00:46:52 GMT
+   Content-Length: 41
+   Content-Type: text/plain; charset=utf-8
+
+   {"Id":3,"Name":"John Glick","Balance":100}
+   ```
+5) Запрос для создания quest
+
+```bash
+   curl -i -X POST \
+     http://localhost:8080/quests \
+     -H 'Content-Type: application/json' \
+     -d '{
+       "Name": "quest1",
+       "Cost": 20
+   }
+```
+
+   получим такой результат
+
+```json
+HTTP/1.1 201 Created
+Date: Wed, 20 Mar 2024 06:09:03 GMT
+Content-Length: 34
+Content-Type: text/plain; charset=utf-8
+
+{"Id":1,"Name":"quest1","Cost":20}
+```
+
 
 P.S. я долго пытался сделать через докер - не смог, ибо так и не понял, где прописывать запуск db.sql, чтоб, когда начнем совершать события, данные клались в соответсвующую бд, а бд не были созданы, потому что не не смог запустить db.sql.

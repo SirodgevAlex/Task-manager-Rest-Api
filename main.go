@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -16,11 +17,11 @@ type User struct {
 	Balance float32
 }
 
-// type Quest struct {
-// 	id   int
-// 	name string
-// 	cost float32
-// }
+type Quest struct {
+	Id   int
+	Name string
+	Cost float32
+}
 
 var db *sql.DB
 
@@ -41,7 +42,7 @@ func main() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/users", createUser).Methods("POST")
-	// router.HandleFunc("/quests", createQuest).Methods("POST")
+	router.HandleFunc("/quests", createQuest).Methods("POST")
 	// router.HandleFunc("/complete", completeQuest).Methods("POST")
 	// router.HandleFunc("/history/{user_id}", getUserHistory).Methods("GET")
 
@@ -80,4 +81,39 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
+}
+
+func createQuest(w http.ResponseWriter, r *http.Request) {
+	var quest Quest
+	err := json.NewDecoder(r.Body).Decode(&quest)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	fmt.Println(quest.Cost)
+	query := "INSERT INTO quests(name, cost) VALUES($1, $2) RETURNING id"
+	
+	tx, err := db.Begin()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback() 
+	
+	err = tx.QueryRow(query, quest.Name, quest.Cost).Scan(&quest.Id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(quest)
 }
