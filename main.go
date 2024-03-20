@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -26,8 +25,9 @@ type User struct {
 var db *sql.DB
 
 func main() {
-	connStr := "user=username1 password=password1 dbname=db host=db sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
+	var err error
+	connStr := "user=postgres password=1234 dbname=db sslmode=disable"
+	db, err = sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -56,15 +56,28 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Print(user.Name)
-
 	query := "INSERT INTO users(name, balance) VALUES($1, $2) RETURNING id"
-	err = db.QueryRow(query, user.Name, user.Balance).Scan(&user.Id)
+	
+	tx, err := db.Begin()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer tx.Rollback() 
+	
+	err = tx.QueryRow(query, user.Name, user.Balance).Scan(&user.Id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
 }
