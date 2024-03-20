@@ -29,6 +29,11 @@ type Task struct {
 	QuestId int
 }
 
+type UserHistory struct {
+	completedQuests []Quest
+	Balance         float32
+}
+
 var db *sql.DB
 
 func main() {
@@ -50,7 +55,7 @@ func main() {
 	router.HandleFunc("/users", createUser).Methods("POST")
 	router.HandleFunc("/quests", createQuest).Methods("POST")
 	router.HandleFunc("/complete", completeQuest).Methods("POST")
-	// router.HandleFunc("/history/{user_id}", getUserHistory).Methods("GET")
+	router.HandleFunc("/history/{userId}", getUserHistory).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
@@ -183,4 +188,45 @@ func completeQuest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(task)
+}
+
+func getUserHistory(w http.ResponseWriter, r *http.Request) {
+	var userHistory UserHistory
+	userId := mux.Vars(r)["userId"]
+
+	fmt.Println("ya")
+
+	rows, err := db.Query("SELECT * FROM quests q JOIN completedTasks ct ON q.Id = ct.questId WHERE ct.userId = $1", userId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var quest Quest
+		var task  Task
+		if err := rows.Scan(&quest.Id, &quest.Name, &quest.Cost, &task.Id, &task.UserId, &task.QuestId); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		userHistory.completedQuests = append(userHistory.completedQuests, quest)
+	}
+	if err := rows.Err(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var balance float32
+	err = db.QueryRow("SELECT balance from users where Id = $1", userId).Scan(&balance)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	userHistory.Balance = balance
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(userHistory)
 }
