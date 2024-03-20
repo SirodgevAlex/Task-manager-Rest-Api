@@ -9,3 +9,9 @@ CREATE TABLE IF NOT EXISTS quests (
     Name VARCHAR(100) NOT NULL,
     Cost FLOAT4 DEFAULT 0.0
 );
+
+CREATE TABLE IF NOT EXISTS completedTasks (
+    Id SERIAL PRIMARY KEY,
+    userId integer not null references users(Id),
+    questId integer not null references quests(Id)
+);

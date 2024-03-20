@@ -23,6 +23,12 @@ type Quest struct {
 	Cost float32
 }
 
+type Task struct {
+	Id      int
+	UserId  int
+	QuestId int
+}
+
 var db *sql.DB
 
 func main() {
@@ -43,7 +49,7 @@ func main() {
 
 	router.HandleFunc("/users", createUser).Methods("POST")
 	router.HandleFunc("/quests", createQuest).Methods("POST")
-	// router.HandleFunc("/complete", completeQuest).Methods("POST")
+	router.HandleFunc("/complete", completeQuest).Methods("POST")
 	// router.HandleFunc("/history/{user_id}", getUserHistory).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":8080", router))
@@ -58,14 +64,14 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := "INSERT INTO users(name, balance) VALUES($1, $2) RETURNING id"
-	
+
 	tx, err := db.Begin()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer tx.Rollback() 
-	
+	defer tx.Rollback()
+
 	err = tx.QueryRow(query, user.Name, user.Balance).Scan(&user.Id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -91,16 +97,15 @@ func createQuest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(quest.Cost)
 	query := "INSERT INTO quests(name, cost) VALUES($1, $2) RETURNING id"
-	
+
 	tx, err := db.Begin()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer tx.Rollback() 
-	
+	defer tx.Rollback()
+
 	err = tx.QueryRow(query, quest.Name, quest.Cost).Scan(&quest.Id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -116,4 +121,66 @@ func createQuest(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(quest)
+}
+
+func completeQuest(w http.ResponseWriter, r *http.Request) {
+	var task Task
+	err := json.NewDecoder(r.Body).Decode(&task)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var count int
+	err = tx.QueryRow("SELECT COUNT(*) FROM completedTasks WHERE userId = $1 AND questId = $2;", task.UserId, task.QuestId).Scan(&count)
+	if err != nil {
+		tx.Rollback()
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if count > 0 {
+		tx.Rollback()
+		http.Error(w, "Task already completed by user", http.StatusBadRequest)
+		return
+	}
+
+	var cost float32
+	err = tx.QueryRow("SELECT cost FROM quests WHERE id = $1;", task.QuestId).Scan(&cost)
+	if err != nil {
+		tx.Rollback()
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec("UPDATE users SET balance = balance + $1 WHERE id = $2;", cost, task.UserId)
+	if err != nil {
+		tx.Rollback()
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	_, err = tx.Exec("INSERT INTO completedTasks (userId, questId) VALUES ($1, $2);", task.UserId, task.QuestId)
+	if err != nil {
+		tx.Rollback()
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Println(err)
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(task)
 }
