@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -183,8 +182,6 @@ func completeQuest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(err)
-
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(task)
@@ -193,8 +190,6 @@ func completeQuest(w http.ResponseWriter, r *http.Request) {
 func getUserHistory(w http.ResponseWriter, r *http.Request) {
 	var userHistory UserHistory
 	userId := mux.Vars(r)["userId"]
-
-	fmt.Println("ya")
 
 	rows, err := db.Query("SELECT * FROM quests q JOIN completedTasks ct ON q.Id = ct.questId WHERE ct.userId = $1", userId)
 	if err != nil {
