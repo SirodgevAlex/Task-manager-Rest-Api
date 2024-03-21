@@ -28,7 +28,7 @@
      -d '{
        "Name": "John Glick",
        "Balance": 100
-   }
+   }'
    ```
 
    получим такой результат
@@ -50,7 +50,7 @@
      -d '{
        "Name": "quest1",
        "Cost": 20
-   }
+   }'
 ```
 
    получим такой результат
@@ -73,7 +73,7 @@ Content-Type: text/plain; charset=utf-8
      -d '{
        "userId": 1,
        "questId": 4
-   }
+   }'
    ```
 
    получим такой результат
