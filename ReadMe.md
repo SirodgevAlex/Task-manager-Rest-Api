@@ -73,7 +73,7 @@ Content-Type: text/plain; charset=utf-8
      -d '{
        "userId": 1,
        "questId": 4
-   }'
+   }
    ```
 
    получим такой результат
