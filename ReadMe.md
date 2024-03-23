@@ -95,7 +95,7 @@ Content-Type: text/plain; charset=utf-8
    ```
 
    единичка на конце это userId
-8. Сделал Юнит тест на createUser (только на него успел)
+8. Сделал Юнит тесты на createUser и на createQuest (только на них успел)
 
    ```
    go test
