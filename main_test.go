@@ -52,7 +52,30 @@ func TestCreateQuest(t *testing.T) {
 	}
 }
 
+func TestCompleteQuest(t *testing.T) {
+	reqBody := []byte(`{"userId": 1, "questId": 4}`)
+	reqJSON, _ := json.Marshal(reqBody)
+	req := httptest.NewRequest("POST", "/complete", bytes.NewBuffer(reqJSON))
+	req.Header.Set("Content-Type", "application/json")
+
+	responseWriter := httptest.NewRecorder()
+
+	createUser(responseWriter, req)
+
+	if status := responseWriter.Code; status != http.StatusCreated {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusCreated)
+	}
+
+	expected := `{"Id":1,"userId":1,"questId":4}`
+
+	if responseWriter.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v", responseWriter.Body.String(), expected)
+	}
+}
+
 func TestMain(m *testing.M) {
 	TestCreateUser(&testing.T{})
 	TestCreateQuest(&testing.T{})
+	TestCompleteQuest(&testing.T{})
 }
